@@ -14,6 +14,11 @@ contract VotingSystem {
 
     mapping(address => address) public addressToVotedFor;
 
+    event RegisterCandidate(address candidate, string name);
+    event UnregisterCandidate(address candidate, string name);
+    event Vote(address voter, address candidate);
+    event Unvote(address unvoter, address candidate);
+
     constructor(
         address[] memory _candidateAddresses,
         string[] memory _names,
@@ -44,6 +49,8 @@ contract VotingSystem {
 
         candidates.push(msg.sender);
         addressToCandidate[msg.sender] = Candidate(_name, _imageUrl, 0);
+
+        emit RegisterCandidate(msg.sender, _name);
     }
 
     function unregisterAsCandidate() public {
@@ -57,11 +64,18 @@ contract VotingSystem {
             candidate < candidates.length;
             candidate++
         ) {
-            newCandidates[newCandidateIndex] = candidates[candidate];
-            newCandidateIndex++;
+            if (candidates[candidate] != msg.sender) {
+                newCandidates[newCandidateIndex] = candidates[candidate];
+                newCandidateIndex++;
+            }
         }
 
         candidates = newCandidates;
+
+        emit UnregisterCandidate(
+            msg.sender,
+            addressToCandidate[msg.sender].name
+        );
     }
 
     function vote(address _candidate) public {
@@ -70,13 +84,31 @@ contract VotingSystem {
 
         addressToCandidate[_candidate].votes += 1;
         addressToVotedFor[msg.sender] = _candidate;
+
+        emit Vote(msg.sender, _candidate);
     }
 
     function unvote() public {
         require(addressToVotedFor[msg.sender] != address(0));
 
+        address candidate = addressToVotedFor[msg.sender];
+
         addressToCandidate[addressToVotedFor[msg.sender]].votes -= 1;
         addressToVotedFor[msg.sender] = address(0);
+
+        emit Unvote(msg.sender, candidate);
+    }
+
+    function getCandidates() external view returns (address[] memory) {
+        return candidates;
+    }
+
+    function getCandidateDetails(address _candidate)
+        external
+        view
+        returns (Candidate memory)
+    {
+        return addressToCandidate[_candidate];
     }
 
     function candidateRegistered(address _candidateAddress)
