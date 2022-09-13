@@ -28,6 +28,7 @@
     },
     "scripts": {
         "compile": "npx hardhat compile",
-        "test": "npx hardhat test"
+        "test": "npx hardhat test",
+        "verify": "npx hardhat verify"
     }
 }
