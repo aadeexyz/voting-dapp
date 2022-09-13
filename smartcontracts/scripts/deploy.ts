@@ -1,9 +1,16 @@
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 async function main() {
-    const [vitalik, cz, sbf] = await ethers.getSigners();
+    const [deployer] = await ethers.getSigners();
 
-    const candidateAddresses = [vitalik.address, cz.address, sbf.address];
+    console.log("Deploy Contract from Account: ", deployer.address);
+    console.log("Account Balance: ", (await deployer.getBalance()).toString());
+
+    const candidateAddresses = [
+        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "0xe13c5bb07389ee2da2e20ddf317b7af8bd55940e",
+        "0xFdDd2157A1Cf033a98eC13ABD6c9da7579D18A6C",
+    ];
     const names = ["Vitalik Buterin", "Changpeng Zhao", "Sam Bankman-Fried"];
     const imageUrls = [
         "https://ipfs.io/ipfs/Qmcoz6u3SZQgHFQKQL9h7LiTC8MBJ2UFsSE4Sg67yb7qiT",
@@ -17,6 +24,8 @@ async function main() {
         names,
         imageUrls
     );
+
+    console.log("Voting System Address: ", votingSystem.address);
 }
 
 main().catch((error) => {
