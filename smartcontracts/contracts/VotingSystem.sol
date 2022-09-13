@@ -9,10 +9,10 @@ contract VotingSystem {
         uint256 votes;
     }
 
-    address[] public candidates;
-    mapping(address => Candidate) public addressToCandidate;
+    address[] private candidates;
+    mapping(address => Candidate) private addressToCandidate;
 
-    mapping(address => address) public addressToVotedFor;
+    mapping(address => address) private addressToVotedFor;
 
     event RegisterCandidate(address candidate, string name);
     event UnregisterCandidate(address candidate, string name);
@@ -56,7 +56,7 @@ contract VotingSystem {
     function unregisterAsCandidate() public {
         require(candidateRegistered(msg.sender));
 
-        address[] memory newCandidates;
+        address[] memory newCandidates = new address[](candidates.length - 1);
         uint256 newCandidateIndex = 0;
 
         for (

@@ -3,8 +3,8 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 describe("VotingSystem", function () {
-    async function deployVotingSystem() {
-        const [vitalik, cz, sbf] = await ethers.getSigners();
+    async function deployVotingSystemFixture() {
+        const [vitalik, cz, sbf, anatoly] = await ethers.getSigners();
 
         const candidateAddresses = [vitalik.address, cz.address, sbf.address];
         const names = [
@@ -27,16 +27,42 @@ describe("VotingSystem", function () {
 
         return {
             votingSystem,
+            anatoly,
             candidateAddresses,
             names,
             imageUrls,
         };
     }
 
+    async function registerNewCandidateFixture() {
+        const { votingSystem, anatoly } = await loadFixture(
+            deployVotingSystemFixture
+        );
+
+        const candidates = await votingSystem.getCandidates();
+
+        const name = "Anatoly Yakovenko";
+        const imageUrl =
+            "https://ipfs.io/ipfs/QmayVH2eAPBLC6A1aCybkXSnSfRhHS2WBqYMWDCCewM19m";
+
+        await votingSystem.connect(anatoly).registerAsCandidate(name, imageUrl);
+
+        const newCandidates = await votingSystem.getCandidates();
+
+        return {
+            votingSystem,
+            anatoly,
+            name,
+            imageUrl,
+            candidates,
+            newCandidates,
+        };
+    }
+
     describe("Deployment", function () {
         it("Should set correct candidate addresses", async function () {
             const { votingSystem, candidateAddresses } = await loadFixture(
-                deployVotingSystem
+                deployVotingSystemFixture
             );
 
             const returnedCandidates = await votingSystem.getCandidates();
@@ -52,7 +78,7 @@ describe("VotingSystem", function () {
 
         it("Should set correct candidate names and images", async function () {
             const { votingSystem, names, imageUrls } = await loadFixture(
-                deployVotingSystem
+                deployVotingSystemFixture
             );
 
             const candidates = await votingSystem.getCandidates();
@@ -66,6 +92,74 @@ describe("VotingSystem", function () {
                         .imageUrl
                 ).to.equal(imageUrls[i]);
             }
+        });
+    });
+
+    describe("Registration", function () {
+        it("Should register a new candidate if candidate is not already registered", async function () {
+            const {
+                votingSystem,
+                anatoly,
+                candidates,
+                newCandidates,
+                name,
+                imageUrl,
+            } = await loadFixture(registerNewCandidateFixture);
+
+            const oldCandidatesLength = candidates.length;
+
+            expect(newCandidates.length).to.equal(oldCandidatesLength + 1);
+            expect(newCandidates[newCandidates.length - 1]).to.equal(
+                anatoly.address
+            );
+
+            const newCandidateDetails = await votingSystem.getCandidateDetails(
+                newCandidates[newCandidates.length - 1]
+            );
+
+            expect(newCandidateDetails.name).to.equal(name);
+            expect(newCandidateDetails.imageUrl).to.equal(imageUrl);
+        });
+
+        it("Should not register a candidate if that candidate is already registered", async function () {
+            const { votingSystem, anatoly, name, imageUrl } = await loadFixture(
+                registerNewCandidateFixture
+            );
+
+            await expect(
+                votingSystem
+                    .connect(anatoly)
+                    .registerAsCandidate(name, imageUrl)
+            ).to.be.reverted;
+        });
+
+        it("Should unregister a candidate if the candidate is registered", async function () {
+            const { votingSystem, anatoly, newCandidates } = await loadFixture(
+                registerNewCandidateFixture
+            );
+
+            await votingSystem.connect(anatoly).unregisterAsCandidate();
+
+            const cnadidates = await votingSystem.getCandidates();
+
+            expect(cnadidates.length).to.equal(newCandidates.length - 1);
+
+            for (
+                let candidate = 0;
+                candidate < newCandidates.length;
+                candidate++
+            ) {
+                expect(cnadidates[candidate]).to.not.equal(anatoly.address);
+            }
+        });
+
+        it("Should not unregister a candidate if the candidate is not registered", async function () {
+            const { votingSystem, anatoly } = await loadFixture(
+                deployVotingSystemFixture
+            );
+
+            await expect(votingSystem.connect(anatoly).unregisterAsCandidate())
+                .to.be.reverted;
         });
     });
 });
