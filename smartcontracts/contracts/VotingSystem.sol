@@ -44,8 +44,8 @@ contract VotingSystem {
     function registerAsCandidate(
         string calldata _name,
         string calldata _imageUrl
-    ) public {
-        require(!candidateRegistered(msg.sender));
+    ) external {
+        require(!isCandidateRegistered(msg.sender));
 
         candidates.push(msg.sender);
         addressToCandidate[msg.sender] = Candidate(_name, _imageUrl, 0);
@@ -53,8 +53,8 @@ contract VotingSystem {
         emit RegisterCandidate(msg.sender, _name);
     }
 
-    function unregisterAsCandidate() public {
-        require(candidateRegistered(msg.sender));
+    function unregisterAsCandidate() external {
+        require(isCandidateRegistered(msg.sender));
 
         address[] memory newCandidates = new address[](candidates.length - 1);
         uint256 newCandidateIndex = 0;
@@ -78,9 +78,9 @@ contract VotingSystem {
         );
     }
 
-    function vote(address _candidate) public {
+    function vote(address _candidate) external {
         require(addressToVotedFor[msg.sender] == address(0));
-        require(candidateRegistered(_candidate));
+        require(isCandidateRegistered(_candidate));
 
         addressToCandidate[_candidate].votes += 1;
         addressToVotedFor[msg.sender] = _candidate;
@@ -88,7 +88,7 @@ contract VotingSystem {
         emit Vote(msg.sender, _candidate);
     }
 
-    function unvote() public {
+    function unvote() external {
         require(addressToVotedFor[msg.sender] != address(0));
 
         address candidate = addressToVotedFor[msg.sender];
@@ -111,7 +111,11 @@ contract VotingSystem {
         return addressToCandidate[_candidate];
     }
 
-    function candidateRegistered(address _candidateAddress)
+    function getVotedFor() external view returns (address) {
+        return addressToVotedFor[msg.sender];
+    }
+
+    function isCandidateRegistered(address _candidateAddress)
         public
         view
         returns (bool)

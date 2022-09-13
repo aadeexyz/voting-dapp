@@ -59,6 +59,17 @@ describe("VotingSystem", function () {
         };
     }
 
+    async function voteFixture() {
+        const { votingSystem } = await loadFixture(deployVotingSystemFixture);
+
+        const candidates = await votingSystem.getCandidates();
+        const votedFor = candidates[0];
+
+        await votingSystem.vote(votedFor);
+
+        return { votingSystem, candidates, votedFor };
+    }
+
     describe("Deployment", function () {
         it("Should set correct candidate addresses", async function () {
             const { votingSystem, candidateAddresses } = await loadFixture(
@@ -160,6 +171,50 @@ describe("VotingSystem", function () {
 
             await expect(votingSystem.connect(anatoly).unregisterAsCandidate())
                 .to.be.reverted;
+        });
+    });
+
+    describe("Vote", function () {
+        it("Should vote if not already voted", async function () {
+            const { votingSystem, votedFor } = await loadFixture(voteFixture);
+
+            expect(await votingSystem.getVotedFor()).to.equal(votedFor);
+
+            const candidateDetails = await votingSystem.getCandidateDetails(
+                votedFor
+            );
+
+            expect(candidateDetails.votes).to.equal(1);
+        });
+
+        it("Should not vote if already voted", async function () {
+            const { votingSystem, votedFor } = await loadFixture(voteFixture);
+
+            await expect(votingSystem.vote(votedFor)).to.be.reverted;
+        });
+
+        it("Should unvote if voted", async function () {
+            const { votingSystem, votedFor } = await loadFixture(voteFixture);
+
+            const votes = (await votingSystem.getCandidateDetails(votedFor))
+                .votes;
+
+            await votingSystem.unvote();
+
+            expect(await votingSystem.getVotedFor()).to.equal(
+                ethers.constants.AddressZero
+            );
+            expect(
+                (await votingSystem.getCandidateDetails(votedFor)).votes
+            ).to.equal(votes.sub(1));
+        });
+
+        it("Should not unvote if not voted", async function () {
+            const { votingSystem } = await loadFixture(
+                deployVotingSystemFixture
+            );
+
+            await expect(votingSystem.unvote()).to.be.reverted;
         });
     });
 });
