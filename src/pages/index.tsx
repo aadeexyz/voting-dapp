@@ -9,25 +9,35 @@ import {
     Text,
     Image,
 } from "@nextui-org/react";
-import { useAccount, useContractRead } from "wagmi";
+import {
+    useAccount,
+    useContractRead,
+    usePrepareContractWrite,
+    useContractWrite,
+} from "wagmi";
 import { constants } from "ethers";
 import votingSystemABI from "../abi/VotingSystem.json";
 
 const Home: NextPage = () => {
-    const contractAddress = "0xbE0B1588a63026FF2ad6A6AfD6b079260870f234";
+    const contractAddress = "0x70f75e2758cFc66Ce48C2EbC045069C9EBd8f16A";
 
-    const { isConnected } = useAccount();
+    const { address, isConnected } = useAccount();
 
     const getVotedForRead = useContractRead({
         addressOrName: contractAddress,
         contractInterface: votingSystemABI,
         functionName: "getVotedFor",
+        args: [address],
     });
     const getCandidatesRead = useContractRead({
         addressOrName: contractAddress,
         contractInterface: votingSystemABI,
         functionName: "getCandidates",
     });
+
+    const voted =
+        isConnected &&
+        getVotedForRead.data?.toString() != constants.AddressZero.toString();
 
     const candidates = getCandidatesRead.data?.map((candidate) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -38,22 +48,55 @@ const Home: NextPage = () => {
             args: [candidate],
         });
 
+        let voteWrite = undefined;
+
+        if (!voted) {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            let votePrepareWrite = usePrepareContractWrite({
+                addressOrName: contractAddress,
+                contractInterface: votingSystemABI,
+                functionName: "vote",
+                args: [candidate],
+            });
+
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            voteWrite = useContractWrite(votePrepareWrite.config);
+        }
+
         return {
             address: candidate,
             name: getCandidateDetailsRead.data?.name,
-            imageUrl: "https://ipfs.io/ipfs/Qmcoz6u3SZQgHFQKQL9h7LiTC8MBJ2UFsSE4Sg67yb7qiT",
+            imageUrl: getCandidateDetailsRead.data?.imageUrl,
             votes: getCandidateDetailsRead.data?.votes.toString(),
+            write: voteWrite?.write,
         };
     });
 
-    const voted =
-        isConnected &&
-        getVotedForRead.data?.toString != constants.AddressZero.toString;
+    let unvoteWrite: any = undefined;
 
-    console.log(isConnected);
+    if (voted) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const unvotePrepareWrite = usePrepareContractWrite({
+            addressOrName: contractAddress,
+            contractInterface: votingSystemABI,
+            functionName: "unvote",
+        });
 
-    const votedFor = candidates
-        ? candidates[0]
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        unvoteWrite = useContractWrite(unvotePrepareWrite.config).write;
+    }
+
+    const unvote = () => {
+        unvoteWrite.write?.();
+    };
+
+    const votedFor = candidates?.filter(
+        (candidate) => candidate.address == getVotedForRead.data?.toString()
+    ).length
+        ? candidates?.filter(
+              (candidate) =>
+                  candidate.address == getVotedForRead.data?.toString()
+          )[0]
         : { address: "", name: "", imageUrl: "", votes: "" };
 
     return (
@@ -125,14 +168,18 @@ const Home: NextPage = () => {
                                             mr: "0",
                                         }}
                                     >
-                                        <Button>Unvote</Button>
+                                        <Button onClick={() => unvoteWrite?.()}>
+                                            Unvote
+                                        </Button>
                                     </Container>
                                 </Container>
                             </Row>
                         </>
                     ) : (
                         <Text h3 css={{ m: "0px" }}>
-                            {"You Haven't Voted Yet"}
+                            {isConnected
+                                ? "You Haven't Voted Yet"
+                                : "You Are Not Connected"}
                         </Text>
                     )}
                 </Card.Body>
@@ -175,11 +222,18 @@ const Home: NextPage = () => {
                                             }}
                                         >
                                             <Button
-                                                disabled={!isConnected || voted}
+                                                disabled={
+                                                    !isConnected ||
+                                                    !candidate.write ||
+                                                    voted
+                                                }
                                                 css={{
                                                     width: "100%",
                                                     margin: "0",
                                                 }}
+                                                onClick={() =>
+                                                    candidate.write?.()
+                                                }
                                             >
                                                 Vote
                                             </Button>

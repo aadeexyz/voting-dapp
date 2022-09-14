@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 
 describe("VotingSystem", function () {
     async function deployVotingSystemFixture() {
-        const [vitalik, cz, sbf, anatoly] = await ethers.getSigners();
+        const [user, vitalik, cz, sbf, anatoly] = await ethers.getSigners();
 
         const candidateAddresses = [vitalik.address, cz.address, sbf.address];
         const names = [
@@ -27,6 +27,7 @@ describe("VotingSystem", function () {
 
         return {
             votingSystem,
+            user,
             anatoly,
             candidateAddresses,
             names,
@@ -60,14 +61,16 @@ describe("VotingSystem", function () {
     }
 
     async function voteFixture() {
-        const { votingSystem } = await loadFixture(deployVotingSystemFixture);
+        const { votingSystem, user } = await loadFixture(
+            deployVotingSystemFixture
+        );
 
         const candidates = await votingSystem.getCandidates();
         const votedFor = candidates[0];
 
         await votingSystem.vote(votedFor);
 
-        return { votingSystem, candidates, votedFor };
+        return { votingSystem, user, candidates, votedFor };
     }
 
     describe("Deployment", function () {
@@ -176,9 +179,13 @@ describe("VotingSystem", function () {
 
     describe("Vote", function () {
         it("Should vote if not already voted", async function () {
-            const { votingSystem, votedFor } = await loadFixture(voteFixture);
+            const { votingSystem, user, votedFor } = await loadFixture(
+                voteFixture
+            );
 
-            expect(await votingSystem.getVotedFor()).to.equal(votedFor);
+            expect(await votingSystem.getVotedFor(user.address)).to.equal(
+                votedFor
+            );
 
             const candidateDetails = await votingSystem.getCandidateDetails(
                 votedFor
@@ -194,14 +201,16 @@ describe("VotingSystem", function () {
         });
 
         it("Should unvote if voted", async function () {
-            const { votingSystem, votedFor } = await loadFixture(voteFixture);
+            const { votingSystem, user, votedFor } = await loadFixture(
+                voteFixture
+            );
 
             const votes = (await votingSystem.getCandidateDetails(votedFor))
                 .votes;
 
             await votingSystem.unvote();
 
-            expect(await votingSystem.getVotedFor()).to.equal(
+            expect(await votingSystem.getVotedFor(user.address)).to.equal(
                 ethers.constants.AddressZero
             );
             expect(

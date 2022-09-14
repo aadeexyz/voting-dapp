@@ -111,8 +111,8 @@ contract VotingSystem {
         return addressToCandidate[_candidate];
     }
 
-    function getVotedFor() external view returns (address) {
-        return addressToVotedFor[msg.sender];
+    function getVotedFor(address _voter) external view returns (address) {
+        return addressToVotedFor[_voter];
     }
 
     function isCandidateRegistered(address _candidateAddress)

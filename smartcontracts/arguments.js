@@ -8,6 +8,6 @@ module.exports = [
     [
         "https://ipfs.io/ipfs/Qmcoz6u3SZQgHFQKQL9h7LiTC8MBJ2UFsSE4Sg67yb7qiT",
         "https://ipfs.io/ipfs/QmRKTLWZmRxE9QDv6CZR5NaA8vy8CdnRUovoQuUgntzk7i",
-        "https://ipfs.io/ipfs/Qmcq7cfK6y6aKPMjHmmQm9ms6D4JJq6qzUg7hy91ko5VPw",
+        "https://coingeek.com/wp-content/uploads/2022/02/ftx-ceo-sam-bankman-fried-isnt-who-you-think-he-is-min-1200x720.png",
     ],
 ];

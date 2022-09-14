@@ -13,7 +13,7 @@ const Layout: FC<Props> = ({ children }) => {
 
     return (
         <>
-            <Navbar isBordered variant={"sticky"}>
+            <Navbar variant={"sticky"}>
                 <Navbar.Content
                     enableCursorHighlight
                     activeColor={"secondary"}
